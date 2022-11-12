@@ -1,0 +1,20 @@
+# version: '3.0'
+services:
+
+  simplelocalpathplanner:
+    container_name: turtlebot3_simple_local_path_planner
+    build: 
+      context: .
+      dockerfile: Dockerfile
+      args:
+        ROS_VERSION: noetic
+    # command: ["bash", "-c", "source /ws/devel/setup.bash && roslaunch spectral_triad_classification run.launch feature_dataset:=household_objects"] # dataset options: household_objects, carpet_notcarpet, floors
+    user: root
+    environment:
+      - DISPLAY=$DISPLAY                #GUI
+      - NVIDIA_DRIVER_CAPABILITIES=all  #GUI
+      - NVIDIA_VISIBLE_DEVICES=all      #GUI
+      - TURTLEBOT3_MODEL=burger         #Turtlebot3 model
+    volumes:
+      - '/tmp/.X11-unix:/tmp/.X11-unix:rw'  #GUI
+      - .:/catkin_ws/src:rw
