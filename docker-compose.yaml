@@ -8,7 +8,7 @@ services:
       dockerfile: Dockerfile
       args:
         ROS_VERSION: noetic
-    # command: ["bash", "-c", "source /ws/devel/setup.bash && roslaunch spectral_triad_classification run.launch feature_dataset:=household_objects"] # dataset options: household_objects, carpet_notcarpet, floors
+    # command: ["bash", "-c", "source /catkin_ws/devel/setup.bash && roslaunch simple_local_path_planner turtlebot3_navigation.launch"] 
     user: root
     environment:
       - DISPLAY=$DISPLAY                #GUI
@@ -17,4 +17,6 @@ services:
       - TURTLEBOT3_MODEL=burger         #Turtlebot3 model
     volumes:
       - '/tmp/.X11-unix:/tmp/.X11-unix:rw'  #GUI
-      - .:/catkin_ws/src:rw
+      - .:/catkin_ws/src/simple_local_path_planner:rw # Mount package for development. Will probably copy to docker image once finished.
+
+# Todo: Add container script to run unit tests

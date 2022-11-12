@@ -26,6 +26,12 @@ Note: The following instructions assume docker is being run in a linux environme
     xhost +local:root # Warning: Unsecure. Refer to above reference tutorial for alternative methods
     docker compose run simplelocalpathplanner
 
+    # TODO replace the following once development finished
+    cd /catkin_ws
+    catkin_make
+    source deve/setup.bash
+    roslaunch simple_local_path_planner turtlebot3_navigation.launch
+
 
 
 ### Unit Testing

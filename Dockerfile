@@ -18,7 +18,9 @@ RUN apt-get install -y \
 
 RUN apt-get install -y \
   ros-$ROS_VERSION-rqt-* \
-  ros-$ROS_VERSION-gazebo-*
+  ros-$ROS_VERSION-gazebo-* \
+  ros-$ROS_VERSION-gmapping \
+  ros-$ROS_VERSION-dwa-local-planner
 RUN apt install -y python3-rosinstall python3-rosinstall-generator python3-wstool build-essential git
 RUN apt install python3-rosdep
 # RUN /bin/bash -c "rosdep init"
