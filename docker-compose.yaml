@@ -10,6 +10,8 @@ services:
         ROS_VERSION: noetic
     # command: ["bash", "-c", "source /catkin_ws/devel/setup.bash && roslaunch simple_local_path_planner turtlebot3_navigation.launch"] 
     user: root
+    privileged: true
+    network_mode: host
     environment:
       - DISPLAY=$DISPLAY                #GUI
       - NVIDIA_DRIVER_CAPABILITIES=all  #GUI
@@ -18,5 +20,6 @@ services:
     volumes:
       - '/tmp/.X11-unix:/tmp/.X11-unix:rw'  #GUI
       - .:/catkin_ws/src/simple_local_path_planner:rw # Mount package for development. Will probably copy to docker image once finished.
+      - ./.vscode:/catkin_ws/.vscode:rw     # Copy extension settings to support dev container
 
 # Todo: Add container script to run unit tests
