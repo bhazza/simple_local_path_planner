@@ -32,9 +32,38 @@ public:
 
     bool isGoalReached();
 private:
-    costmap_2d::Costmap2DROS* costmap_ros_;
-    tf2_ros::Buffer* tf_;
-    bool initialized_;
+    struct Config
+    {
+        Config():
+            maxAngularVelocity(0.5), // rad/s
+            maxLinearVelocity(0.5), // m/s
+            angularTolerance(0.01), // rad
+            linearTolerance(0.01){} // metres
+
+        double maxAngularVelocity;
+        double maxLinearVelocity;
+        double angularTolerance;
+        double linearTolerance;
+    };
+
+
+    bool TransformPosesToFrame(const std::vector<geometry_msgs::PoseStamped>& poses, const std::string& targetFrame, std::vector<geometry_msgs::PoseStamped>& transformedPoses) const;
+    double getAngularDelta(const geometry_msgs::PoseStamped& from, const geometry_msgs::PoseStamped& to) const;
+    double getLinearDelta(const geometry_msgs::PoseStamped& from, const geometry_msgs::PoseStamped& to) const;
+    geometry_msgs::Twist getRotationalTwist(const double& angularDelta) const;
+    geometry_msgs::Twist getLinearTwist(const double& linearDelta) const;
+    geometry_msgs::Twist ZeroTwist() const;
+
+    costmap_2d::Costmap2DROS* m_costmapROS;
+    tf2_ros::Buffer* m_tf;
+
+    std::vector<geometry_msgs::PoseStamped> m_globalPlan;
+    size_t m_currentGoalIndex;
+    bool m_initialised;
+    bool m_goalReached;
+    bool m_rotating;
+
+    Config m_config;
 };
 };
 
