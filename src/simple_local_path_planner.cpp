@@ -103,7 +103,7 @@ bool SimpleLocalPathPlanner::computeVelocityCommands(geometry_msgs::Twist& cmd_v
     {
         ROS_DEBUG("Linear Goal Reached");
         const double angular_delta = getAngularDelta(robot_pose, goal_pose);
-        if (fabs(angular_delta) < m_config.angular_tolerance)
+        if (fabs(angular_delta) < toRadians(m_config.angular_tolerance_degrees))
         {
             ROS_DEBUG("Goal Reached");
             cmd_vel = zeroTwist();
@@ -130,7 +130,7 @@ bool SimpleLocalPathPlanner::computeVelocityCommands(geometry_msgs::Twist& cmd_v
     double current_robot_yaw = tf2::getYaw(robot_pose.pose.orientation);
     const double angular_delta =  angles::shortest_angular_distance(current_robot_yaw, target_bearing);
     ROS_DEBUG("Angular Delta: %f", angular_delta);
-    if (fabs(angular_delta) > m_config.angular_tolerance)
+    if (fabs(angular_delta) > toRadians(m_config.angular_tolerance_degrees))
     {
         m_rotating = true;
         cmd_vel = getRotationalTwist(angular_delta);
@@ -206,16 +206,20 @@ double SimpleLocalPathPlanner::getLinearDelta(const geometry_msgs::PoseStamped& 
 
 geometry_msgs::Twist SimpleLocalPathPlanner::getRotationalTwist(const double& angular_delta) const
 {
-    const double velocity = std::min(m_config.max_angular_velocity, fabs(angular_delta) * m_config.max_angular_velocity * 10.0);
+    // velocity proportional to delta, and capped by max and min config
+    double velocity = std::min(fabs(angular_delta), toRadians(m_config.max_angular_velocity_degrees)); // enforce max velocity
+    velocity = std::max(velocity, toRadians(m_config.min_angular_velocity_degrees)); // enforce min velocity
     geometry_msgs::Twist cmd_vel;
-    cmd_vel.angular.z = angular_delta > 0 ? velocity : -1.0 * velocity;
+    cmd_vel.angular.z = angular_delta > 0 ? velocity : -1.0 * velocity; // Set direction
     return cmd_vel;
 
 }
 
 geometry_msgs::Twist SimpleLocalPathPlanner::getLinearTwist(const double& linear_delta) const
 {
-    const double velocity = fabs(linear_delta) * m_config.max_linear_velocity;
+    // velocity proportional to delta, and capped by max and min config
+    double velocity = std::min(fabs(linear_delta), m_config.max_linear_velocity); // enforce max velocity
+    velocity = std::max(velocity, m_config.min_linear_velocity); // enforce min velocity
     geometry_msgs::Twist cmd_vel;
     cmd_vel.linear.x = velocity;
     return cmd_vel;
@@ -233,5 +237,11 @@ geometry_msgs::Twist SimpleLocalPathPlanner::zeroTwist() const
 
     return msg;
 }
+
+double SimpleLocalPathPlanner::toRadians(const double& degrees) const
+{
+    return degrees * (M_PI/180.0);
+}
+
 
 }

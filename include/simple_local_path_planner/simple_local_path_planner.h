@@ -35,15 +35,19 @@ private:
     struct Config
     {
         Config():
-            max_angular_velocity(0.5), // rad/s
-            max_linear_velocity(0.5), // m/s
-            angular_tolerance(0.01), // rad
-            linear_tolerance(0.01),
+            min_angular_velocity_degrees(5),    // deg/s
+            max_angular_velocity_degrees(40),   // deg/s
+            min_linear_velocity(0.05),   // m/s
+            max_linear_velocity(0.5),   // m/s
+            angular_tolerance_degrees(5),       // deg
+            linear_tolerance(0.05),     // m    
             goal_step(10){} // metres
 
-        double max_angular_velocity;
+        double min_angular_velocity_degrees;
+        double max_angular_velocity_degrees;
+        double min_linear_velocity;
         double max_linear_velocity;
-        double angular_tolerance;
+        double angular_tolerance_degrees;
         double linear_tolerance;
         size_t goal_step;
     };
@@ -55,6 +59,7 @@ private:
     geometry_msgs::Twist getRotationalTwist(const double& angular_delta) const;
     geometry_msgs::Twist getLinearTwist(const double& linear_delta) const;
     geometry_msgs::Twist zeroTwist() const;
+    double toRadians(const double& degrees) const;
 
     costmap_2d::Costmap2DROS* m_costmap_ros;
     tf2_ros::Buffer* m_tf;
@@ -64,7 +69,7 @@ private:
     bool m_initialised;
     bool m_goal_reached;
     bool m_rotating;
-
+    
     Config m_config;
 };
 };
