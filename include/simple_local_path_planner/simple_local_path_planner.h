@@ -35,34 +35,34 @@ private:
     struct Config
     {
         Config():
-            maxAngularVelocity(0.5), // rad/s
-            maxLinearVelocity(0.5), // m/s
-            angularTolerance(0.01), // rad
-            linearTolerance(0.01),
-            goalStep(10){} // metres
+            max_angular_velocity(0.5), // rad/s
+            max_linear_velocity(0.5), // m/s
+            angular_tolerance(0.01), // rad
+            linear_tolerance(0.01),
+            goal_step(10){} // metres
 
-        double maxAngularVelocity;
-        double maxLinearVelocity;
-        double angularTolerance;
-        double linearTolerance;
-        size_t goalStep;
+        double max_angular_velocity;
+        double max_linear_velocity;
+        double angular_tolerance;
+        double linear_tolerance;
+        size_t goal_step;
     };
 
 
-    bool TransformPosesToFrame(const std::vector<geometry_msgs::PoseStamped>& poses, const std::string& targetFrame, std::vector<geometry_msgs::PoseStamped>& transformedPoses) const;
+    bool transformPosesToFrame(const std::vector<geometry_msgs::PoseStamped>& poses, const std::string& target_frame, std::vector<geometry_msgs::PoseStamped>& transformed_poses) const;
     double getAngularDelta(const geometry_msgs::PoseStamped& from, const geometry_msgs::PoseStamped& to) const;
     double getLinearDelta(const geometry_msgs::PoseStamped& from, const geometry_msgs::PoseStamped& to) const;
-    geometry_msgs::Twist getRotationalTwist(const double& angularDelta) const;
-    geometry_msgs::Twist getLinearTwist(const double& linearDelta) const;
-    geometry_msgs::Twist ZeroTwist() const;
+    geometry_msgs::Twist getRotationalTwist(const double& angular_delta) const;
+    geometry_msgs::Twist getLinearTwist(const double& linear_delta) const;
+    geometry_msgs::Twist zeroTwist() const;
 
-    costmap_2d::Costmap2DROS* m_costmapROS;
+    costmap_2d::Costmap2DROS* m_costmap_ros;
     tf2_ros::Buffer* m_tf;
 
-    std::vector<geometry_msgs::PoseStamped> m_globalPlan;
-    size_t m_targetWaypointIndex;
+    std::vector<geometry_msgs::PoseStamped> m_global_plan;
+    size_t m_target_waypoint_index;
     bool m_initialised;
-    bool m_goalReached;
+    bool m_goal_reached;
     bool m_rotating;
 
     Config m_config;
