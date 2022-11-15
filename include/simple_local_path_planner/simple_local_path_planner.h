@@ -38,12 +38,14 @@ private:
             maxAngularVelocity(0.5), // rad/s
             maxLinearVelocity(0.5), // m/s
             angularTolerance(0.01), // rad
-            linearTolerance(0.01){} // metres
+            linearTolerance(0.01),
+            goalStep(10){} // metres
 
         double maxAngularVelocity;
         double maxLinearVelocity;
         double angularTolerance;
         double linearTolerance;
+        size_t goalStep;
     };
 
 
@@ -58,7 +60,7 @@ private:
     tf2_ros::Buffer* m_tf;
 
     std::vector<geometry_msgs::PoseStamped> m_globalPlan;
-    size_t m_currentGoalIndex;
+    size_t m_targetWaypointIndex;
     bool m_initialised;
     bool m_goalReached;
     bool m_rotating;

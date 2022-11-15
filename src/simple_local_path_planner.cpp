@@ -15,7 +15,7 @@ namespace simple_local_path_planner{
 SimpleLocalPathPlanner::SimpleLocalPathPlanner() : 
     m_costmapROS(NULL), 
     m_tf(NULL), 
-    m_currentGoalIndex(0),
+    m_targetWaypointIndex(0),
     m_initialised(false),
     m_goalReached(false),
     m_rotating(false),
@@ -62,9 +62,8 @@ bool SimpleLocalPathPlanner::setPlan(
     m_globalPlan = orig_global_plan;
     m_goalReached = false;
 
-    // New goal so reset index
-    // m_currentGoalIndex = m_globalPlan.size() - 1;
-    m_currentGoalIndex = 10;
+    // New goal so reset index 
+    m_targetWaypointIndex = m_config.goalStep;
 
     ROS_DEBUG("Plan Updated");
     return true;
@@ -102,30 +101,34 @@ bool SimpleLocalPathPlanner::computeVelocityCommands(geometry_msgs::Twist& cmd_v
     const geometry_msgs::PoseStamped& goalPose = transformedPlan.back();
     if (getLinearDelta(globalRobotPose, goalPose) < m_config.linearTolerance)
     {
+        ROS_DEBUG("Linear Goal Reached");
         const double angularDelta = getAngularDelta(globalRobotPose, goalPose);
         if (angularDelta < m_config.angularTolerance)
         {
+            ROS_DEBUG("Goal Reached");
             cmd_vel = ZeroTwist();
             m_goalReached = true;
             return true;
         }
         else
         {
+            ROS_DEBUG("Rotating to Goal");
             m_rotating = true;
             cmd_vel = getRotationalTwist(angularDelta);
             return true;
         }
     }
 
+    //Get next target waypoint, making sure not to exceed the size of the vector
+    const geometry_msgs::PoseStamped& targetPose = m_targetWaypointIndex < transformedPlan.size() ? transformedPlan.at(m_targetWaypointIndex) : transformedPlan.back();
+
     //ROTATE IN PLACE
     // Get bearing from current robot position to next waypoint on transformed plan
-    const double targetBearing = atan2(
-        (transformedPlan.at(m_currentGoalIndex).pose.position.y - globalRobotPose.pose.position.y),
-            transformedPlan.at(m_currentGoalIndex).pose.position.x - globalRobotPose.pose.position.x);
+    const geometry_msgs::Point& targetPosition = targetPose.pose.position;
+    const double targetBearing = atan2(targetPosition.y - globalRobotPose.pose.position.y, targetPosition.x - globalRobotPose.pose.position.x);
     
     double currentRobotYaw = tf2::getYaw(globalRobotPose.pose.orientation);
     const double angularDelta =  angles::shortest_angular_distance(currentRobotYaw, targetBearing);
-    // const double angularDelta = getAngularDelta(globalRobotPose.pose.orientation, targetYaw);
     ROS_DEBUG("Angular Delta: %f", angularDelta);
     if (fabs(angularDelta) > m_config.angularTolerance)
     {
@@ -142,7 +145,7 @@ bool SimpleLocalPathPlanner::computeVelocityCommands(geometry_msgs::Twist& cmd_v
     }
 
     // TRAVERSE TO NEXT GOAL
-    const double linearDelta = getLinearDelta(globalRobotPose, transformedPlan.at(m_currentGoalIndex));
+    const double linearDelta = getLinearDelta(globalRobotPose, targetPose);
     ROS_DEBUG("Linear Delta: %f", linearDelta);
     if (fabs(linearDelta) > m_config.linearTolerance)
     {
@@ -150,9 +153,8 @@ bool SimpleLocalPathPlanner::computeVelocityCommands(geometry_msgs::Twist& cmd_v
         return true;
     }
 
-    // INCREMENT INDEX - TODO this is dodgy, fix.
-    m_currentGoalIndex = std::min ( m_currentGoalIndex + 10, transformedPlan.size() - 1);
-    ROS_DEBUG("Plan Step Index: : %d", (unsigned int)m_currentGoalIndex);
+    // Increment transfor
+    m_targetWaypointIndex += m_config.goalStep;
 
     return true;
 }
@@ -164,8 +166,7 @@ bool SimpleLocalPathPlanner::isGoalReached()
         ROS_ERROR("This planner has not been initialized");
         return false;
     }
-    // return m_goalReached;
-    return m_currentGoalIndex >= m_globalPlan.size();
+    return m_goalReached;
 }
 
 bool SimpleLocalPathPlanner::TransformPosesToFrame(const std::vector<geometry_msgs::PoseStamped>& poses, const std::string& targetFrame, std::vector<geometry_msgs::PoseStamped>& transformedPoses) const
