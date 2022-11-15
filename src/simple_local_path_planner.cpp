@@ -103,7 +103,7 @@ bool SimpleLocalPathPlanner::computeVelocityCommands(geometry_msgs::Twist& cmd_v
     {
         ROS_DEBUG("Linear Goal Reached");
         const double angular_delta = getAngularDelta(robot_pose, goal_pose);
-        if (angular_delta < m_config.angular_tolerance)
+        if (fabs(angular_delta) < m_config.angular_tolerance)
         {
             ROS_DEBUG("Goal Reached");
             cmd_vel = zeroTwist();
