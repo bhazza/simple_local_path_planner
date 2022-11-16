@@ -44,7 +44,6 @@ private:
 
     // Todo: General functions: consider moving these into some kind of utils namespace - would make it easier to do unit tests for these functions too.
     geometry_msgs::Twist zeroTwist() const;
-
     double getAngularDelta(const geometry_msgs::PoseStamped& from, const geometry_msgs::PoseStamped& to) const;
     double getLinearDelta(const geometry_msgs::PoseStamped& from, const geometry_msgs::PoseStamped& to) const;
     geometry_msgs::Twist getRotationalTwist(const double& angular_delta) const;

@@ -12,6 +12,7 @@ find_package(catkin REQUIRED COMPONENTS
   roscpp
   rospy
   std_msgs
+  dynamic_reconfigure
 )
 
 ## System dependencies are found with CMake's conventions
@@ -89,10 +90,9 @@ find_package(catkin REQUIRED COMPONENTS
 ##     and list every .cfg file to be processed
 
 ## Generate dynamic reconfigure parameters in the 'cfg' folder
-# generate_dynamic_reconfigure_options(
-#   cfg/DynReconf1.cfg
-#   cfg/DynReconf2.cfg
-# )
+generate_dynamic_reconfigure_options(
+  cfg/simple_local_path_planner_config.cfg
+)
 
 ###################################
 ## catkin specific configuration ##
@@ -126,6 +126,9 @@ add_library(${PROJECT_NAME}_lib
   src/simple_local_path_planner.cpp
   src/simple_local_path_planner_ros.cpp
 )
+
+# Build dynamic reconfigure headers before library
+add_dependencies(${PROJECT_NAME}_lib ${PROJECT_NAME}_gencfg)
 
 ## Add cmake target dependencies of the library
 ## as an example, code may need to be generated before libraries

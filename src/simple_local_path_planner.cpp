@@ -17,7 +17,7 @@ SimpleLocalPathPlanner::~SimpleLocalPathPlanner() {}
 void SimpleLocalPathPlanner::reset()
 {
     m_plan.clear();
-    m_current_target_index = m_config.goal_step; // Note, this index is checked if out of range in getTargetPose()
+    m_current_target_index = m_config.waypoint_step_size; // Note, this index is checked if out of range in getTargetPose()
 }
 
 void SimpleLocalPathPlanner::setConfig(const Config& config)
@@ -147,7 +147,7 @@ geometry_msgs::Twist SimpleLocalPathPlanner::getNextCmdVel()
     }
 
     // If we've reached the target pose, increment to next one.
-    m_current_target_index += m_config.goal_step;
+    m_current_target_index += m_config.waypoint_step_size;
 
     return cmd_vel;
 }

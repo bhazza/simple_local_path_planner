@@ -8,8 +8,11 @@
 #include <costmap_2d/costmap_2d_ros.h>
 #include <geometry_msgs/PoseStamped.h>
 #include <geometry_msgs/Twist.h>
+#include <dynamic_reconfigure/server.h>
 
+#include <simple_local_path_planner/NodeParametersConfig.h>
 #include "simple_local_path_planner/simple_local_path_planner.h"
+
 
 using namespace std;
 
@@ -18,6 +21,7 @@ namespace simple_local_path_planner_ros{
 class SimpleLocalPathPlannerROS : public nav_core::BaseLocalPlanner{
 public:
 
+    // The following public functions are all part of the BaseLocalPlanner API
     SimpleLocalPathPlannerROS();
     SimpleLocalPathPlannerROS(std::string name, tf2_ros::Buffer* tf,
                  costmap_2d::Costmap2DROS* costmap_ros);
@@ -34,6 +38,12 @@ public:
     bool isGoalReached();
 private:
 
+    /** \brief Tranforms the vector of poses into the target frame
+     * \param poses Vector of poses to transform
+     * \param target_frame The frame to transform to
+     * \param transformed_poses Vector of transformed poses
+     * \return True if the transform is possible, false otherwise 
+     */
     bool transformPosesToFrame(const std::vector<geometry_msgs::PoseStamped>& poses, const std::string& target_frame, std::vector<geometry_msgs::PoseStamped>& transformed_poses) const;
 
     costmap_2d::Costmap2DROS* m_costmap_ros;
@@ -43,6 +53,10 @@ private:
 
     // Implementation of the planner
     SimpleLocalPathPlanner m_slpp;
+
+    dynamic_reconfigure::Server<simple_local_path_planner::NodeParametersConfig> *m_server;
+    void dynamicReconfigureConfig(simple_local_path_planner::NodeParametersConfig& node_config, uint32_t);
+
 };
 };
 

@@ -14,7 +14,7 @@ struct Config
         max_linear_velocity = 0.5;          // m/s
         angular_tolerance_degrees = 5;      // deg
         linear_tolerance = 0.05;            // m    
-        goal_step = 10;                     // metres
+        waypoint_step_size = 10;            // Waypoints step size
     }
 
     double min_angular_velocity_degrees;
@@ -23,7 +23,7 @@ struct Config
     double max_linear_velocity;
     double angular_tolerance_degrees;
     double linear_tolerance;
-    size_t goal_step;
+    size_t waypoint_step_size;
 };
 }
 

@@ -11,7 +11,7 @@ SimpleLocalPathPlannerROS::SimpleLocalPathPlannerROS() :
     m_costmap_ros(NULL), 
     m_tf(NULL), 
     m_initialised(false),
-    m_slpp() {}
+    m_slpp(){}
 
 SimpleLocalPathPlannerROS::SimpleLocalPathPlannerROS(std::string name, tf2_ros::Buffer* tf,
                            costmap_2d::Costmap2DROS* costmap_ros)
@@ -20,7 +20,10 @@ SimpleLocalPathPlannerROS::SimpleLocalPathPlannerROS(std::string name, tf2_ros::
     initialize(name, tf, costmap_ros);
 }
 
-SimpleLocalPathPlannerROS::~SimpleLocalPathPlannerROS() {}
+SimpleLocalPathPlannerROS::~SimpleLocalPathPlannerROS() 
+{
+    delete m_server;
+}
 
 // Take note that tf::TransformListener* has been changed to tf2_ros::Buffer* in ROS Noetic
 void SimpleLocalPathPlannerROS::initialize(std::string name, tf2_ros::Buffer* tf,
@@ -31,6 +34,12 @@ void SimpleLocalPathPlannerROS::initialize(std::string name, tf2_ros::Buffer* tf
         m_tf = tf;
         m_costmap_ros = costmap_ros;
         m_initialised = true;
+
+        ros::NodeHandle private_nh("~/simple_local_path_planner");
+
+        m_server = new dynamic_reconfigure::Server<simple_local_path_planner::NodeParametersConfig>(private_nh);
+        dynamic_reconfigure::Server<simple_local_path_planner::NodeParametersConfig>::CallbackType cb = [this](auto& config, auto level){ dynamicReconfigureConfig(config, level); };
+        m_server->setCallback(cb);
     }
     else
     {
@@ -119,6 +128,21 @@ bool SimpleLocalPathPlannerROS::isGoalReached()
     }
     return m_slpp.goalReached();
 }
+
+void SimpleLocalPathPlannerROS::dynamicReconfigureConfig(simple_local_path_planner::NodeParametersConfig& node_config, uint32_t)
+{
+    Config config;
+    config.min_angular_velocity_degrees = node_config.min_angular_velocity_degrees;
+    config.max_angular_velocity_degrees = node_config.max_angular_velocity_degrees;
+    config.min_linear_velocity = node_config.min_linear_velocity;
+    config.max_linear_velocity = node_config.max_linear_velocity;
+    config.angular_tolerance_degrees = node_config.angular_tolerance_degrees;
+    config.linear_tolerance = node_config.linear_tolerance;
+    config.waypoint_step_size = node_config.waypoint_step_size;
+
+    m_slpp.setConfig(config);
+}
+
 
 bool SimpleLocalPathPlannerROS::transformPosesToFrame(const std::vector<geometry_msgs::PoseStamped>& poses, const std::string& target_frame, std::vector<geometry_msgs::PoseStamped>& transformed_poses) const
 {
