@@ -8,7 +8,7 @@ services:
       dockerfile: Dockerfile
       args:
         ROS_VERSION: noetic
-    # command: ["bash", "-c", "source /catkin_ws/devel/setup.bash && roslaunch simple_local_path_planner turtlebot3_navigation.launch"] 
+    command: ["bash", "-c", "source /catkin_ws/devel/setup.bash && roslaunch simple_local_path_planner turtlebot3_navigation.launch"] 
     user: root
     privileged: true
     network_mode: host

@@ -42,12 +42,15 @@ RUN apt-get install -y \
 # WORKDIR $HOME/catkin_turtlebot_ws/
 # RUN /bin/bash -c ". /opt/ros/$ROS_VERSION/setup.bash; catkin_make"
 
-RUN mkdir -p /catkin_ws/src/
+RUN mkdir -p /catkin_ws/src/simple_local_path_planner
+ADD . /catkin_ws/src/simple_local_path_planner
 WORKDIR /catkin_ws/
+RUN /bin/bash -c '. /opt/ros/$ROS_VERSION/setup.bash; catkin_make'
 
 # Install optional useful tools
-RUN apt-get install -y \
-  vim
+# RUN apt-get install -y \
+#   vim \
+#   gdb
 
 # Entrypoint
 ADD entrypoint.sh /entrypoint.sh

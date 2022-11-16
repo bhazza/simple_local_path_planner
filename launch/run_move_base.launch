@@ -1,6 +1,6 @@
 <launch>
 
-  <!-- Load config file to set logging level-->
+  <!-- Load config file to set logging level to debug-->
   <env name="ROSCONSOLE_CONFIG_FILE" value="$(find simple_local_path_planner)/cfg/logging.conf"/>
 
   <!-- Arguments -->
@@ -12,7 +12,5 @@
     <arg name="model" value="$(arg model)" />
     <arg name="move_forward_only" value="$(arg move_forward_only)"/>
   </include>
-
-  <node name="rqt_reconfigure" pkg="rqt_reconfigure" type="rqt_reconfigure"/>
 
 </launch>

@@ -10,6 +10,8 @@
   <arg name="map_file" default="$(find turtlebot3_navigation)/maps/map.yaml"/>
   <arg name="open_rviz" default="true"/>
   <arg name="move_forward_only" default="false"/>
+  <arg name="run_move_base" default="true"/> <!-- Easier to run this separately during development, so don't have to restart everything-->
+
 
   <!-- Turtlebot3 -->
   <include file="$(find turtlebot3_bringup)/launch/turtlebot3_remote.launch">
@@ -20,17 +22,27 @@
   <node pkg="map_server" name="map_server" type="map_server" args="$(arg map_file)"/>
 
   <!-- AMCL -->
-  <include file="$(find turtlebot3_navigation)/launch/amcl.launch"/>
+  <!-- MODIFICATION: Set coordinates so that robot starts in correct location -->
+  <include file="$(find turtlebot3_navigation)/launch/amcl.launch">
+    <arg name="initial_pose_x" value="-2.0" />
+    <arg name="initial_pose_y" value="-0.5"/>
+    <arg name="initial_pose_a" value="0"/>
+  </include>
 
   <!-- MODIFICATION: use local modified copy of move_base.launch -->
-  <!-- <include file="$(find simple_local_path_planner)/launch/move_base.launch">
-    <arg name="model" value="$(arg model)" />
-    <arg name="move_forward_only" value="$(arg move_forward_only)"/>
-  </include> -->
+  <group if="$(arg run_move_base)"> 
+    <include file="$(find simple_local_path_planner)/launch/move_base.launch">
+      <arg name="model" value="$(arg model)" />
+      <arg name="move_forward_only" value="$(arg move_forward_only)"/>
+    </include>
+  </group>
 
   <!-- rviz -->
   <group if="$(arg open_rviz)"> 
     <node pkg="rviz" type="rviz" name="rviz" required="true"
           args="-d $(find turtlebot3_navigation)/rviz/turtlebot3_navigation.rviz"/>
   </group>
+
+  <!-- MODIFICATION: open rqt reconfigure to demonstrate configurable simple local path planner -->
+  <node name="rqt_reconfigure" pkg="rqt_reconfigure" type="rqt_reconfigure"/>
 </launch>
