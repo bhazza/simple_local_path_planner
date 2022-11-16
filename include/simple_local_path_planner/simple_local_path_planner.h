@@ -1,76 +1,61 @@
 #ifndef SIMPLE_LOCAL_PATH_PLANNER_H_
 #define SIMPLE_LOCAL_PATH_PLANNER_H_
 
-// abstract class from which our plugin inherits
-#include <nav_core/base_local_planner.h>
-
-#include <ros/ros.h>
-#include <tf2_ros/buffer.h>
-#include <costmap_2d/costmap_2d_ros.h>
 #include <geometry_msgs/PoseStamped.h>
 #include <geometry_msgs/Twist.h>
+#include "simple_local_path_planner/simple_local_path_planner_config.h"
 
 using namespace std;
 
-namespace simple_local_path_planner{
+namespace simple_local_path_planner_ros{
 
-class SimpleLocalPathPlanner : public nav_core::BaseLocalPlanner{
+class SimpleLocalPathPlanner{
 public:
 
     SimpleLocalPathPlanner();
-    SimpleLocalPathPlanner(std::string name, tf2_ros::Buffer* tf,
-                 costmap_2d::Costmap2DROS* costmap_ros);
-
     ~SimpleLocalPathPlanner();
 
-    void initialize(std::string name, tf2_ros::Buffer* tf,
-                    costmap_2d::Costmap2DROS* costmap_ros);
+    void reset();
 
-    bool setPlan(const std::vector<geometry_msgs::PoseStamped>& orig_global_plan);
+    void setConfig(const Config& config);
+    void setRobotPose(const geometry_msgs::PoseStamped& robot_pose);
+    void setPlan(const std::vector<geometry_msgs::PoseStamped>& plan);
 
-    bool computeVelocityCommands(geometry_msgs::Twist& cmd_vel);
+    const geometry_msgs::PoseStamped& getRobotPose() const;
+    const geometry_msgs::PoseStamped& getTargetPose() const;
+    const geometry_msgs::PoseStamped& getGoalPose() const;
 
-    bool isGoalReached();
+    geometry_msgs::Twist getRotateToGoal();
+    geometry_msgs::Twist getNextCmdVel();
+    geometry_msgs::Twist getStoppedCmdVel();
+
+    bool planAvailable() const;
+    bool goalReached() const;
+    bool isAtGoalPosition() const;
+    bool isAtGoalOrientation() const;
+
 private:
-    struct Config
+    enum MotionState
     {
-        Config():
-            min_angular_velocity_degrees(5),    // deg/s
-            max_angular_velocity_degrees(40),   // deg/s
-            min_linear_velocity(0.05),   // m/s
-            max_linear_velocity(0.5),   // m/s
-            angular_tolerance_degrees(5),       // deg
-            linear_tolerance(0.05),     // m    
-            goal_step(10){} // metres
-
-        double min_angular_velocity_degrees;
-        double max_angular_velocity_degrees;
-        double min_linear_velocity;
-        double max_linear_velocity;
-        double angular_tolerance_degrees;
-        double linear_tolerance;
-        size_t goal_step;
+        STOPPED,
+        ROTATE,
+        TRAVERSE
     };
 
+    // Todo: General functions: consider moving these into some kind of utils namespace - would make it easier to do unit tests for these functions too.
+    geometry_msgs::Twist zeroTwist() const;
 
-    bool transformPosesToFrame(const std::vector<geometry_msgs::PoseStamped>& poses, const std::string& target_frame, std::vector<geometry_msgs::PoseStamped>& transformed_poses) const;
     double getAngularDelta(const geometry_msgs::PoseStamped& from, const geometry_msgs::PoseStamped& to) const;
     double getLinearDelta(const geometry_msgs::PoseStamped& from, const geometry_msgs::PoseStamped& to) const;
     geometry_msgs::Twist getRotationalTwist(const double& angular_delta) const;
     geometry_msgs::Twist getLinearTwist(const double& linear_delta) const;
-    geometry_msgs::Twist zeroTwist() const;
     double toRadians(const double& degrees) const;
 
-    costmap_2d::Costmap2DROS* m_costmap_ros;
-    tf2_ros::Buffer* m_tf;
-
-    std::vector<geometry_msgs::PoseStamped> m_global_plan;
-    size_t m_target_waypoint_index;
-    bool m_initialised;
-    bool m_goal_reached;
-    bool m_rotating;
-    
+    std::vector<geometry_msgs::PoseStamped> m_plan;
+    geometry_msgs::PoseStamped m_robot_pose;
+    size_t m_current_target_index;
     Config m_config;
+    MotionState m_motion_state;
 };
 };
 

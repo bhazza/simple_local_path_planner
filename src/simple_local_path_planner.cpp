@@ -1,195 +1,174 @@
 #include "simple_local_path_planner/simple_local_path_planner.h"
-#include <pluginlib/class_list_macros.h>
 
+#include <angles/angles.h>
+#include <ros/console.h> // Debug messages
 #include <tf2/utils.h>
-//TODO sort
-#include <base_local_planner/goal_functions.h>
-#include <tf2/LinearMath/Matrix3x3.h>
-#include <tf2/utils.h>
-#include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 
-PLUGINLIB_EXPORT_CLASS(simple_local_path_planner::SimpleLocalPathPlanner, nav_core::BaseLocalPlanner)
-
-namespace simple_local_path_planner{
+namespace simple_local_path_planner_ros{
 
 SimpleLocalPathPlanner::SimpleLocalPathPlanner() : 
-    m_costmap_ros(NULL), 
-    m_tf(NULL), 
-    m_target_waypoint_index(0),
-    m_initialised(false),
-    m_goal_reached(false),
-    m_rotating(false),
-    m_config() {}
+    m_current_target_index(0),
+    m_motion_state(MotionState::STOPPED),
+    m_config(){}
 
-SimpleLocalPathPlanner::SimpleLocalPathPlanner(std::string name, tf2_ros::Buffer* tf,
-                           costmap_2d::Costmap2DROS* costmap_ros)
-    : m_costmap_ros(NULL), m_tf(NULL), m_initialised(false)
-{
-    initialize(name, tf, costmap_ros);
-}
 
 SimpleLocalPathPlanner::~SimpleLocalPathPlanner() {}
 
-// Take note that tf::TransformListener* has been changed to tf2_ros::Buffer* in ROS Noetic
-void SimpleLocalPathPlanner::initialize(std::string name, tf2_ros::Buffer* tf,
-                              costmap_2d::Costmap2DROS* costmap_ros)
+void SimpleLocalPathPlanner::reset()
 {
-    if(!m_initialised)
-    {
-        m_tf = tf;
-        m_costmap_ros = costmap_ros;
-        m_initialised = true;
-    }
-    else
-    {
-        ROS_WARN("This planner has already been initialized");
-    }
+    m_plan.clear();
+    m_current_target_index = m_config.goal_step; // Note, this index is checked if out of range in getTargetPose()
 }
 
-bool SimpleLocalPathPlanner::setPlan(
-    const std::vector<geometry_msgs::PoseStamped>& orig_global_plan
-)
+void SimpleLocalPathPlanner::setConfig(const Config& config)
 {
-    if(!m_initialised)
-    {
-        ROS_ERROR("This planner has not been initialized");
-        return false;
-    }
-
-   
-    // Save new plan
-    m_global_plan.clear();
-    m_global_plan = orig_global_plan;
-    m_goal_reached = false;
-
-    // New goal so reset index 
-    m_target_waypoint_index = m_config.goal_step;
-
-    ROS_DEBUG("Plan Updated");
-    return true;
+    m_config = config;
 }
 
-bool SimpleLocalPathPlanner::computeVelocityCommands(geometry_msgs::Twist& cmd_vel)
+void SimpleLocalPathPlanner::setRobotPose(const geometry_msgs::PoseStamped& robot_pose)
 {
-    if(!m_initialised)
+    ROS_DEBUG("Setting robot pose");
+    m_robot_pose = robot_pose;
+}
+
+void SimpleLocalPathPlanner::setPlan(const std::vector<geometry_msgs::PoseStamped>& plan)
+{
+    ROS_DEBUG("Setting plan");
+    // Plan has been changed, start again
+    reset();
+    m_plan = plan;
+}
+
+const geometry_msgs::PoseStamped& SimpleLocalPathPlanner::getRobotPose() const
+{
+    return m_robot_pose;
+}
+
+const geometry_msgs::PoseStamped& SimpleLocalPathPlanner::getTargetPose() const
+{
+    if (m_current_target_index < m_plan.size())
     {
-        ROS_ERROR("This planner has not been initialized");
-        return false;
+        return m_plan.at(m_current_target_index);
     }
 
-    // Zero twist message
-    cmd_vel = zeroTwist();
+    return m_plan.back();
+}
 
-    //if the global plan passed in is empty... we won't do anything
-    if(m_global_plan.empty())
-        return false;
+const geometry_msgs::PoseStamped& SimpleLocalPathPlanner::getGoalPose() const
+{
+    return m_plan.back();
+}
 
+bool SimpleLocalPathPlanner::planAvailable() const
+{
+    return !m_plan.empty();
+}
 
-    // Get pose of the robot
-    geometry_msgs::PoseStamped robot_pose;
-    if (!m_costmap_ros->getRobotPose(robot_pose)) {
-        ROS_ERROR("Could not get global robot pose");
-        return false;
-    }
-
-    // Transform the provided plan into same frame as the robot
-    std::vector<geometry_msgs::PoseStamped> transformed_plan;
-    const std::string globalFrame = m_costmap_ros->getGlobalFrameID();
-    transformPosesToFrame(m_global_plan, globalFrame, transformed_plan);
-
-    // Check to see if we're at the goal. If we are, do final rotation
-    const geometry_msgs::PoseStamped& goal_pose = transformed_plan.back();
-    if (getLinearDelta(robot_pose, goal_pose) < m_config.linear_tolerance)
+bool SimpleLocalPathPlanner::goalReached() const 
+{
+    if (!planAvailable())
     {
-        ROS_DEBUG("Linear Goal Reached");
-        const double angular_delta = getAngularDelta(robot_pose, goal_pose);
-        if (fabs(angular_delta) < toRadians(m_config.angular_tolerance_degrees))
-        {
-            ROS_DEBUG("Goal Reached");
-            cmd_vel = zeroTwist();
-            m_goal_reached = true;
-            return true;
-        }
-        else
-        {
-            ROS_DEBUG("Rotating to Goal");
-            m_rotating = true;
-            cmd_vel = getRotationalTwist(angular_delta);
-            return true;
-        }
+        return false;
     }
+    ROS_DEBUG("Checking if goal reached");
+    return isAtGoalPosition() && isAtGoalOrientation();
+}
 
-    //Get next target waypoint, making sure not to exceed the size of the vector
-    const geometry_msgs::PoseStamped& target_pose = m_target_waypoint_index < transformed_plan.size() ? transformed_plan.at(m_target_waypoint_index) : transformed_plan.back();
+bool SimpleLocalPathPlanner::isAtGoalPosition() const
+{
+    if (!planAvailable())
+    {
+        return false;
+    }
+    ROS_DEBUG("Checked if robot at goal position");
+    return getLinearDelta(getRobotPose(), getGoalPose()) < m_config.linear_tolerance;
+}
 
-    //ROTATE IN PLACE
+bool SimpleLocalPathPlanner::isAtGoalOrientation() const
+{
+    if (!planAvailable())
+    {
+        return false;
+    }
+    ROS_DEBUG("Checked if robot at goal orientation");
+    const double abs_angular_delta = fabs(getAngularDelta(getRobotPose(), getGoalPose()));
+    const double angular_tolerance = toRadians(m_config.angular_tolerance_degrees);
+    return abs_angular_delta < angular_tolerance;
+}
+
+geometry_msgs::Twist SimpleLocalPathPlanner::getRotateToGoal()
+{
+    m_motion_state = MotionState::ROTATE;
+    const double angular_delta = getAngularDelta(getRobotPose(), getGoalPose());
+    return getRotationalTwist(angular_delta);
+}
+
+geometry_msgs::Twist SimpleLocalPathPlanner::getNextCmdVel()
+{
+    geometry_msgs::Twist cmd_vel = zeroTwist();
+
+    // Todo: Check if these can change during execution, and if so should we take copies instead of reference?
+    const geometry_msgs::PoseStamped& robot_pose = getRobotPose();
+    const geometry_msgs::PoseStamped& target_pose = getTargetPose();
+
+    // 1. First check if we need to rotate in place.
+
     // Get bearing from current robot position to next waypoint on transformed plan
     const geometry_msgs::Point& target_position = target_pose.pose.position;
-    const double target_bearing = atan2(target_position.y - robot_pose.pose.position.y, target_position.x - robot_pose.pose.position.x);
-    
-    double current_robot_yaw = tf2::getYaw(robot_pose.pose.orientation);
-    const double angular_delta =  angles::shortest_angular_distance(current_robot_yaw, target_bearing);
-    ROS_DEBUG("Angular Delta: %f", angular_delta);
+    const double target_yaw = atan2(target_position.y - robot_pose.pose.position.y, target_position.x - robot_pose.pose.position.x);
+
+    // Get the angle delta between current robot yaw and the target bearing
+    double robot_yaw = tf2::getYaw(robot_pose.pose.orientation);
+    const double angular_delta =  angles::shortest_angular_distance(robot_yaw, target_yaw);
+    ROS_DEBUG("Angular Delta: %f, Threshold %f", angular_delta, toRadians(m_config.angular_tolerance_degrees));
+
     if (fabs(angular_delta) > toRadians(m_config.angular_tolerance_degrees))
     {
-        m_rotating = true;
+        m_motion_state = MotionState::ROTATE;
         cmd_vel = getRotationalTwist(angular_delta);
-        return true;
+        return cmd_vel;
     }
-    else if (m_rotating) 
+    else if (m_motion_state == MotionState::ROTATE) 
     {
         // Target achieved, stop rotating
-        cmd_vel = zeroTwist();
-        m_rotating = false;
-        return true;
+        cmd_vel = getStoppedCmdVel();
+        m_motion_state = MotionState::STOPPED;
+        return cmd_vel;
     }
 
-    // TRAVERSE TO NEXT GOAL
+    // 2. Traverse to next target position
     const double linear_delta = getLinearDelta(robot_pose, target_pose);
     ROS_DEBUG("Linear Delta: %f", linear_delta);
     if (fabs(linear_delta) > m_config.linear_tolerance)
     {
+        m_motion_state = MotionState::TRAVERSE;
         cmd_vel = getLinearTwist(linear_delta);
-        return true;
+        return cmd_vel;
     }
 
-    // Increment transfor
-    m_target_waypoint_index += m_config.goal_step;
+    // If we've reached the target pose, increment to next one.
+    m_current_target_index += m_config.goal_step;
 
-    return true;
+    return cmd_vel;
 }
 
-bool SimpleLocalPathPlanner::isGoalReached()
+geometry_msgs::Twist SimpleLocalPathPlanner::getStoppedCmdVel()
 {
-    if(!m_initialised)
-    {
-        ROS_ERROR("This planner has not been initialized");
-        return false;
-    }
-    return m_goal_reached;
+    m_motion_state = MotionState::STOPPED;
+    return zeroTwist();
 }
 
-bool SimpleLocalPathPlanner::transformPosesToFrame(const std::vector<geometry_msgs::PoseStamped>& poses, const std::string& target_frame, std::vector<geometry_msgs::PoseStamped>& transformed_poses) const
+geometry_msgs::Twist SimpleLocalPathPlanner::zeroTwist() const
 {
-    
-    const std::string& original_frame = poses.front().header.frame_id;
-    const ros::Time& pose_time = poses.front().header.stamp;
+    geometry_msgs::Twist cmd_vel;
+    cmd_vel.angular.x = 0;
+    cmd_vel.angular.y = 0;
+    cmd_vel.angular.z = 0;
+    cmd_vel.linear.x = 0;
+    cmd_vel.linear.y = 0;
+    cmd_vel.linear.z = 0;
 
-    // TODO put this in a try
-    // get plan_to_global_transform from plan frame to global_frame
-    geometry_msgs::TransformStamped plan_to_global_transform = m_tf->lookupTransform(target_frame, ros::Time(), original_frame, pose_time,
-                                                                                  original_frame, ros::Duration(0.5));
-
-    // transform plan
-    transformed_poses.clear();
-    for (const auto& originalPose : poses)
-    {   
-        geometry_msgs::PoseStamped transformed_pose;
-        tf2::doTransform(originalPose, transformed_pose, plan_to_global_transform);
-        transformed_poses.push_back(transformed_pose);
-    }
-
-    return true;
+    return cmd_vel;
 }
 
 double SimpleLocalPathPlanner::getAngularDelta(const geometry_msgs::PoseStamped& from, const geometry_msgs::PoseStamped& to) const
@@ -225,18 +204,6 @@ geometry_msgs::Twist SimpleLocalPathPlanner::getLinearTwist(const double& linear
     return cmd_vel;
 }
 
-geometry_msgs::Twist SimpleLocalPathPlanner::zeroTwist() const
-{
-    geometry_msgs::Twist msg;
-    msg.angular.x = 0;
-    msg.angular.y = 0;
-    msg.angular.z = 0;
-    msg.linear.x = 0;
-    msg.linear.y = 0;
-    msg.linear.z = 0;
-
-    return msg;
-}
 
 double SimpleLocalPathPlanner::toRadians(const double& degrees) const
 {

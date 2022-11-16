@@ -124,6 +124,7 @@ include_directories(
 ## Declare a C++ library
 add_library(${PROJECT_NAME}_lib
   src/simple_local_path_planner.cpp
+  src/simple_local_path_planner_ros.cpp
 )
 
 ## Add cmake target dependencies of the library
