@@ -15,6 +15,8 @@ find_package(catkin REQUIRED COMPONENTS
   dynamic_reconfigure
 )
 
+find_package(GTest REQUIRED)
+
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)
 
@@ -119,6 +121,7 @@ catkin_package(
 include_directories(
   include
   ${catkin_INCLUDE_DIRS}
+  ${GTEST_INCLUDE_DIRS}
 )
 
 ## Declare a C++ library
@@ -206,6 +209,10 @@ add_dependencies(${PROJECT_NAME}_lib ${PROJECT_NAME}_gencfg)
 # if(TARGET ${PROJECT_NAME}-test)
 #   target_link_libraries(${PROJECT_NAME}-test ${PROJECT_NAME})
 # endif()
+
+catkin_add_gtest(unit_tests test/test_local_path_planner.cpp)
+target_link_libraries(unit_tests ${catkin_LIBRARIES})
+
 
 ## Add folders to be run by python nosetests
 # catkin_add_nosetests(test)
