@@ -1,5 +1,7 @@
 #include "simple_local_path_planner/simple_local_path_planner_ros.h"
 #include <pluginlib/class_list_macros.h>
+#include <tf2_geometry_msgs/tf2_geometry_msgs.h>
+
 
 PLUGINLIB_EXPORT_CLASS(simple_local_path_planner_ros::SimpleLocalPathPlannerROS, nav_core::BaseLocalPlanner)
 
