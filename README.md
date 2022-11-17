@@ -9,7 +9,7 @@ All development and testing has been carried out using Ubuntu 22.04 host, with R
 This package has been developed and tested using docker. This is both for user-convience, and because my host PC is running Ubuntu 22.04, which is not directly supported by ROS Noetic (a requirement of this task). The following section details several ways to run this package in docker.
 
 ### Prerequisites
- - Docker & Docker Compose: Suggest installing [Docker Desktop](https://docs.docker.com/desktop/) which contains all docker dependencies.
+ - Docker & Docker Compose: Suggest installing [Docker Desktop](https://docs.docker.com/desktop/) which contains all docker dependencies. For Ubuntu these instructions should work: [Linux install](https://docs.docker.com/desktop/install/ubuntu/), making sure to carry out the [post-install steps](https://docs.docker.com/engine/install/linux-postinstall/).
  - X-Server access: Docker will need to be able to access x-server. More information can be found in the [ROS GUI Docker Tutorial](http://wiki.ros.org/docker/Tutorials/GUI). For linux users, run the following the any console before running docker. 
 
         xhost +local:root # Warning: Unsecure. Refer to above reference tutorial for alternative methods
@@ -32,7 +32,6 @@ Note: I added "xhost +local:root" to my ~/.bashrc to provide GUI access when run
     echo "xhost +local:docker" >> ~/.bashrc
 
 You will need the following extensions (Todo: double check this list is complete):
- - ms-vscode-remote.remote-containers
  - ms-azuretools.vscode-docker
  - ms-vscode-remote.vscode-remote-extensionpack
 
