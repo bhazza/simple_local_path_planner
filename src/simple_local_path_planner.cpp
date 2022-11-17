@@ -59,43 +59,6 @@ const geometry_msgs::PoseStamped& SimpleLocalPathPlanner::getGoalPose() const
     return m_plan.back();
 }
 
-bool SimpleLocalPathPlanner::planAvailable() const
-{
-    return !m_plan.empty();
-}
-
-bool SimpleLocalPathPlanner::goalReached() const 
-{
-    if (!planAvailable())
-    {
-        return false;
-    }
-    ROS_DEBUG("Checking if goal reached");
-    return isAtGoalPosition() && isAtGoalOrientation();
-}
-
-bool SimpleLocalPathPlanner::isAtGoalPosition() const
-{
-    if (!planAvailable())
-    {
-        return false;
-    }
-    ROS_DEBUG("Checked if robot at goal position");
-    return getLinearDelta(getRobotPose(), getGoalPose()) < m_config.linear_tolerance;
-}
-
-bool SimpleLocalPathPlanner::isAtGoalOrientation() const
-{
-    if (!planAvailable())
-    {
-        return false;
-    }
-    ROS_DEBUG("Checked if robot at goal orientation");
-    const double abs_angular_delta = fabs(getAngularDelta(getRobotPose(), getGoalPose()));
-    const double angular_tolerance = toRadians(m_config.angular_tolerance_degrees);
-    return abs_angular_delta < angular_tolerance;
-}
-
 geometry_msgs::Twist SimpleLocalPathPlanner::getRotateToGoal()
 {
     m_motion_state = MotionState::ROTATE;
@@ -103,6 +66,7 @@ geometry_msgs::Twist SimpleLocalPathPlanner::getRotateToGoal()
     return getRotationalTwist(angular_delta);
 }
 
+// Todo: Consider splitting this function out, and also making it more generic so that it can be called by the getRotateToGoal() function above
 geometry_msgs::Twist SimpleLocalPathPlanner::getNextCmdVel()
 {
     geometry_msgs::Twist cmd_vel = zeroTwist();
@@ -156,6 +120,43 @@ geometry_msgs::Twist SimpleLocalPathPlanner::getStoppedCmdVel()
 {
     m_motion_state = MotionState::STOPPED;
     return zeroTwist();
+}
+
+bool SimpleLocalPathPlanner::planAvailable() const
+{
+    return !m_plan.empty();
+}
+
+bool SimpleLocalPathPlanner::goalReached() const 
+{
+    if (!planAvailable())
+    {
+        return false;
+    }
+    ROS_DEBUG("Checking if goal reached");
+    return isAtGoalPosition() && isAtGoalOrientation();
+}
+
+bool SimpleLocalPathPlanner::isAtGoalPosition() const
+{
+    if (!planAvailable())
+    {
+        return false;
+    }
+    ROS_DEBUG("Checked if robot at goal position");
+    return getLinearDelta(getRobotPose(), getGoalPose()) < m_config.linear_tolerance;
+}
+
+bool SimpleLocalPathPlanner::isAtGoalOrientation() const
+{
+    if (!planAvailable())
+    {
+        return false;
+    }
+    ROS_DEBUG("Checked if robot at goal orientation");
+    const double abs_angular_delta = fabs(getAngularDelta(getRobotPose(), getGoalPose()));
+    const double angular_tolerance = toRadians(m_config.angular_tolerance_degrees);
+    return abs_angular_delta < angular_tolerance;
 }
 
 geometry_msgs::Twist SimpleLocalPathPlanner::zeroTwist() const

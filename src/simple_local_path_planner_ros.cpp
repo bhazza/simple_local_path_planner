@@ -98,6 +98,7 @@ bool SimpleLocalPathPlannerROS::computeVelocityCommands(geometry_msgs::Twist& cm
     // Set planner
     m_slpp.setPlan(transformed_plan);
 
+    // Check if we've reached the end goal of the plan
     if (m_slpp.isAtGoalPosition())
     {
         ROS_DEBUG("Linear Goal Reached");
@@ -108,12 +109,14 @@ bool SimpleLocalPathPlannerROS::computeVelocityCommands(geometry_msgs::Twist& cm
         }
         else
         {
+            ROS_DEBUG("Rotating to goal");
             cmd_vel = m_slpp.getRotateToGoal();
         }
         return true;
     }
     else
     {
+        ROS_DEBUG("Moving to next waypoint in plan");
         cmd_vel = m_slpp.getNextCmdVel();
         return true;
     }

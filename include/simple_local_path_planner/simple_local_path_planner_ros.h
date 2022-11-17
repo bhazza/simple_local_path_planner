@@ -55,6 +55,11 @@ private:
     SimpleLocalPathPlanner m_slpp;
 
     dynamic_reconfigure::Server<simple_local_path_planner::NodeParametersConfig> *m_server;
+
+    /** \brief Callback used to set the path planner config using dynamic reconfigure
+     * \param node_config Config values
+     * \param uint32_t level
+     */
     void dynamicReconfigureConfig(simple_local_path_planner::NodeParametersConfig& node_config, uint32_t);
 
 };

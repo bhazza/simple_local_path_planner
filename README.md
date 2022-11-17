@@ -1,6 +1,6 @@
 # simple_local_path_planner
 
-This repository contains the implementation of a simple local path planner to satisfy the requirements of the [BotsAndUs coding exercise](docs/Robotics_Engineer_Coding_Exercise_-_Google_Docs.pdf).
+This repository contains the implementation of a simple local path planner to satisfy the requirements of a coding exercise ([see requirements checklist below](#requirements)).
 
 All development and testing has been carried out using Ubuntu 22.04 host, with ROS Noetic and [TurtleBot3 Simulation](https://emanual.robotis.com/docs/en/platform/turtlebot3/simulation/#virtual-navigation-with-turtlebot3) run in Docker, and VS code connected remotely. Note, this package may work with other ROS versions, but this is untested.
 
@@ -69,8 +69,9 @@ In order to maintain a consistent coding style - having inherited the existing s
 I do however deviate from their member variable naming convention; I've opted to prefix with "m_", rather than a trailing underscore. Small victories... :-)
 
 ## Requirements
+#requirements
 
-The following is a checklist of requirements specified by [BotsAndUs coding exercise](docs/Robotics_Engineer_Coding_Exercise_-_Google_Docs.pdf).
+The following is a checklist of requirements specified by the coding exercise.
 
 ### Functional
 
@@ -88,8 +89,8 @@ Optional (choose at least one):
 ### Non-Functional
 - [X] Your planner must be implemented and compatible with ROS Noetic.(***Developed and tested in Noetic docker container***)
 - [X] The code should follow best-practices and a consistent coding style.(***Used ROS coding style, as per "Coding Style" section above***)
-- [] You should include unit tests for the custom code you have written. (***In progress...***)
-- [X] The code should include suitable documentation and comments as required.(***Started. Needs finishing***)
+- [ ] You should include unit tests for the custom code you have written. (***In progress...***)
+- [X] The code should include suitable documentation and comments as required.(***Instructions provided in README, and header files contain function descriptions***)
 - [X] The local planner must be testable in Gazebo using the turtlebot 3 simulation (using the model burger). This launch file must be modified to bring up the navigation and localization of the platform, so that it is ready to receive goals from the standard move_base package interface using your new local planner.
 
 ### Deliverables
