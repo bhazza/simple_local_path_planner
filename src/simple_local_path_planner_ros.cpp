@@ -22,6 +22,7 @@ SimpleLocalPathPlannerROS::SimpleLocalPathPlannerROS(std::string name, tf2_ros::
 
 SimpleLocalPathPlannerROS::~SimpleLocalPathPlannerROS() 
 {
+    // Clean up allocated memory
     delete m_server;
 }
 
@@ -35,8 +36,8 @@ void SimpleLocalPathPlannerROS::initialize(std::string name, tf2_ros::Buffer* tf
         m_costmap_ros = costmap_ros;
         m_initialised = true;
 
+        // Set up private node handle, dynamic reconfigure server and callback
         ros::NodeHandle private_nh("~/simple_local_path_planner");
-
         m_server = new dynamic_reconfigure::Server<simple_local_path_planner::NodeParametersConfig>(private_nh);
         dynamic_reconfigure::Server<simple_local_path_planner::NodeParametersConfig>::CallbackType cb = [this](auto& config, auto level){ dynamicReconfigureConfig(config, level); };
         m_server->setCallback(cb);
@@ -98,28 +99,10 @@ bool SimpleLocalPathPlannerROS::computeVelocityCommands(geometry_msgs::Twist& cm
     // Set planner
     m_slpp.setPlan(transformed_plan);
 
-    // Check if we've reached the end goal of the plan
-    if (m_slpp.isAtGoalPosition())
-    {
-        ROS_DEBUG("Linear Goal Reached");
-        if (m_slpp.isAtGoalOrientation())
-        {
-            cmd_vel = m_slpp.getStoppedCmdVel();
-            ROS_DEBUG("Goal Reached");
-        }
-        else
-        {
-            ROS_DEBUG("Rotating to goal");
-            cmd_vel = m_slpp.getRotateToGoal();
-        }
-        return true;
-    }
-    else
-    {
-        ROS_DEBUG("Moving to next waypoint in plan");
-        cmd_vel = m_slpp.getNextCmdVel();
-        return true;
-    }
+    // Get next velocity cmd
+    cmd_vel = m_slpp.getNextCmdVel();
+
+    return true;
 }
 
 bool SimpleLocalPathPlannerROS::isGoalReached()

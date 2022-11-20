@@ -55,9 +55,11 @@ add_library(${PROJECT_NAME}_lib
   src/simple_local_path_planner.cpp
   src/simple_local_path_planner_ros.cpp
 )
-
 # Build dynamic reconfigure headers before library
 add_dependencies(${PROJECT_NAME}_lib ${PROJECT_NAME}_gencfg)
+target_link_libraries(${PROJECT_NAME}_lib
+    ${catkin_LIBRARIES}
+  )
 
 
 #############
@@ -65,5 +67,5 @@ add_dependencies(${PROJECT_NAME}_lib ${PROJECT_NAME}_gencfg)
 #############
 
 catkin_add_gtest(unit_tests test/test_local_path_planner.cpp)
-target_link_libraries(unit_tests ${catkin_LIBRARIES})
+target_link_libraries(unit_tests ${catkin_LIBRARIES} ${PROJECT_NAME}_lib)
 

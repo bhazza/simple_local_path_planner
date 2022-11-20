@@ -98,15 +98,15 @@ public:
      */
     bool goalReached() const;
 
-    /** \brief Check if robot xy position is at the final goal xy position, within the linear_tolerance set in config
+    /** \brief Check if robot xy position is at the target xy position, within the linear_tolerance set in config
      * \return True if at goal xy position
      */
-    bool isAtGoalPosition() const;
+    bool robotIsAtPosition(const geometry_msgs::PoseStamped& targetPose) const;
 
-    /** \brief Check if robot yaw angle is at the final goal yaw angle, within the angular_tolerance set in config
+    /** \brief Check if robot yaw angle is at the target yaw angle, within the angular_tolerance set in config
      * \return True if at goal angular position
      */
-    bool isAtGoalOrientation() const;
+    bool robotIsAtOrientation(const geometry_msgs::PoseStamped& targetPose) const;
 
 private:
 
@@ -139,7 +139,7 @@ private:
      * \param to To pose
      * \return The linear distance between from and to poses
      */
-    double getLinearDelta(const geometry_msgs::PoseStamped& from, const geometry_msgs::PoseStamped& to) const;
+    double getAbsLinearDelta(const geometry_msgs::PoseStamped& from, const geometry_msgs::PoseStamped& to) const;
 
     /** \brief Get rotation velocity in the direction of the angular delta. This will be proportional to the 
      * magnitude of the angular_delta, bound by the min and max thresholds defined in the config.
@@ -170,6 +170,8 @@ private:
     size_t m_current_target_index;
     Config m_config;
     MotionState m_motion_state;
+
+    friend class SimpleLocalPathPlannerTester;
 };
 };
 

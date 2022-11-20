@@ -66,54 +66,72 @@ geometry_msgs::Twist SimpleLocalPathPlanner::getRotateToGoal()
     return getRotationalTwist(angular_delta);
 }
 
-// Todo: Consider splitting this function out, and also making it more generic so that it can be called by the getRotateToGoal() function above
+// Todo: Consider splitting this function out
 geometry_msgs::Twist SimpleLocalPathPlanner::getNextCmdVel()
 {
-    geometry_msgs::Twist cmd_vel = zeroTwist();
-
     // Todo: Check if these can change during execution, and if so should we take copies instead of reference?
     const geometry_msgs::PoseStamped& robot_pose = getRobotPose();
     const geometry_msgs::PoseStamped& target_pose = getTargetPose();
 
-    // 1. First check if we need to rotate in place.
-
-    // Get bearing from current robot position to next waypoint on transformed plan
-    const geometry_msgs::Point& target_position = target_pose.pose.position;
-    const double target_yaw = atan2(target_position.y - robot_pose.pose.position.y, target_position.x - robot_pose.pose.position.x);
-
-    // Get the angle delta between current robot yaw and the target bearing
-    double robot_yaw = tf2::getYaw(robot_pose.pose.orientation);
-    const double angular_delta =  angles::shortest_angular_distance(robot_yaw, target_yaw);
-    ROS_DEBUG("Angular Delta: %f, Threshold %f", angular_delta, toRadians(m_config.angular_tolerance_degrees));
-
-    if (fabs(angular_delta) > toRadians(m_config.angular_tolerance_degrees))
+    // If we're not already at target pose, first check if we need to rotate in place towards target
+    if (!robotIsAtPosition(target_pose))
     {
-        m_motion_state = MotionState::ROTATE;
-        cmd_vel = getRotationalTwist(angular_delta);
-        return cmd_vel;
-    }
-    else if (m_motion_state == MotionState::ROTATE) 
-    {
-        // Target achieved, stop rotating
-        cmd_vel = getStoppedCmdVel();
-        m_motion_state = MotionState::STOPPED;
-        return cmd_vel;
+        // Get bearing from current robot position to next waypoint on transformed plan
+        const geometry_msgs::Point& target_position = target_pose.pose.position;
+        const double target_yaw = atan2(target_position.y - robot_pose.pose.position.y, target_position.x - robot_pose.pose.position.x);
+        // std::cout << "target yaw: " << target_yaw << std::endl;
+
+        // Get the angle delta between current robot yaw and the target bearing
+        double robot_yaw = tf2::getYaw(robot_pose.pose.orientation);
+        // std::cout << "robot yaw: " << robot_yaw << std::endl;
+        const double angular_delta =  angles::shortest_angular_distance(robot_yaw, target_yaw);
+        ROS_DEBUG("Angular Delta: %f, Threshold %f", angular_delta, toRadians(m_config.angular_tolerance_degrees));
+
+        if (fabs(angular_delta) > toRadians(m_config.angular_tolerance_degrees))
+        {
+            ROS_DEBUG("Rotating towards next target");
+            m_motion_state = MotionState::ROTATE;
+            return getRotationalTwist(angular_delta);
+        }
+        else if (m_motion_state == MotionState::ROTATE) 
+        {
+            ROS_DEBUG("Now facing target");
+            m_motion_state = MotionState::STOPPED;
+            return getStoppedCmdVel();
+        }
     }
 
-    // 2. Traverse to next target position
-    const double linear_delta = getLinearDelta(robot_pose, target_pose);
+    // Once facing target, traverse to target position
+    const double linear_delta = getAbsLinearDelta(robot_pose, target_pose);
     ROS_DEBUG("Linear Delta: %f", linear_delta);
     if (fabs(linear_delta) > m_config.linear_tolerance)
     {
+        ROS_DEBUG("Traversing to next target");
         m_motion_state = MotionState::TRAVERSE;
-        cmd_vel = getLinearTwist(linear_delta);
-        return cmd_vel;
+        return getLinearTwist(linear_delta);
+    }
+
+    // If we're at the goal, rotate to final goal pose.
+    if (robotIsAtPosition(getGoalPose()))
+    {
+        ROS_DEBUG("Linear Goal Reached");
+        if (robotIsAtOrientation(getGoalPose()))
+        {
+            ROS_DEBUG("Goal Reached");
+            return getStoppedCmdVel();
+        }
+        else
+        {
+            ROS_DEBUG("Rotating to goal");
+            return getRotateToGoal();
+        }
     }
 
     // If we've reached the target pose, increment to next one.
     m_current_target_index += m_config.waypoint_step_size;
 
-    return cmd_vel;
+    // If we make it to the end, send stop
+    return getStoppedCmdVel();
 }
 
 geometry_msgs::Twist SimpleLocalPathPlanner::getStoppedCmdVel()
@@ -134,27 +152,27 @@ bool SimpleLocalPathPlanner::goalReached() const
         return false;
     }
     ROS_DEBUG("Checking if goal reached");
-    return isAtGoalPosition() && isAtGoalOrientation();
+    return robotIsAtPosition(getGoalPose()) && robotIsAtOrientation(getGoalPose());
 }
 
-bool SimpleLocalPathPlanner::isAtGoalPosition() const
+bool SimpleLocalPathPlanner::robotIsAtPosition(const geometry_msgs::PoseStamped& targetPose) const
 {
     if (!planAvailable())
     {
         return false;
     }
     ROS_DEBUG("Checked if robot at goal position");
-    return getLinearDelta(getRobotPose(), getGoalPose()) < m_config.linear_tolerance;
+    return getAbsLinearDelta(getRobotPose(), targetPose) < m_config.linear_tolerance;
 }
 
-bool SimpleLocalPathPlanner::isAtGoalOrientation() const
+bool SimpleLocalPathPlanner::robotIsAtOrientation(const geometry_msgs::PoseStamped& targetPose) const
 {
     if (!planAvailable())
     {
         return false;
     }
     ROS_DEBUG("Checked if robot at goal orientation");
-    const double abs_angular_delta = fabs(getAngularDelta(getRobotPose(), getGoalPose()));
+    const double abs_angular_delta = fabs(getAngularDelta(getRobotPose(), targetPose));
     const double angular_tolerance = toRadians(m_config.angular_tolerance_degrees);
     return abs_angular_delta < angular_tolerance;
 }
@@ -179,7 +197,7 @@ double SimpleLocalPathPlanner::getAngularDelta(const geometry_msgs::PoseStamped&
     return angles::shortest_angular_distance(fromYaw, toYaw);
 }
 
-double SimpleLocalPathPlanner::getLinearDelta(const geometry_msgs::PoseStamped& from, const geometry_msgs::PoseStamped& to) const
+double SimpleLocalPathPlanner::getAbsLinearDelta(const geometry_msgs::PoseStamped& from, const geometry_msgs::PoseStamped& to) const
 {
     return std::sqrt(std::pow(from.pose.position.x - to.pose.position.x, 2) + std::pow(from.pose.position.y - to.pose.position.y, 2));
 }
