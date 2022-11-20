@@ -61,6 +61,16 @@ For development purposes, it is easier to launch the Simulation and Navigation p
 
 Note that doing this will result in much more debug messages. To change this, modify the [cfg/logging.conf](cfg/logging.conf) file
 
+## Testing
+
+Google test is used to implement unit testing. To run tests:
+
+    catkin_make run_tests
+
+or
+
+    rosrun simple_local_path_planner unit_tests
+
 ## Coding Style
 
 In order to maintain a consistent coding style - having inherited the existing style of ROS BaseLocalPlanner API - this package conforms to the [ROS coding style](http://wiki.ros.org/CppStyleGuide), even though I much prefer camel-case variable names and capitalised first letters on functions for C++. 
@@ -88,7 +98,7 @@ Optional (choose at least one):
 ### Non-Functional
 - [X] Your planner must be implemented and compatible with ROS Noetic.(***Developed and tested in Noetic docker container***)
 - [X] The code should follow best-practices and a consistent coding style.(***Used ROS coding style, as per "Coding Style" section above***)
-- [ ] You should include unit tests for the custom code you have written. (***In progress...***)
+- [X] You should include unit tests for the custom code you have written. (***Unit testing documented above***)
 - [X] The code should include suitable documentation and comments as required.(***Instructions provided in README, and header files contain function descriptions***)
 - [X] The local planner must be testable in Gazebo using the turtlebot 3 simulation (using the model burger). This launch file must be modified to bring up the navigation and localization of the platform, so that it is ready to receive goals from the standard move_base package interface using your new local planner.
 
