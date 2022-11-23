@@ -3,6 +3,10 @@
 
 #include <geometry_msgs/PoseStamped.h>
 #include <geometry_msgs/Twist.h>
+
+#include <costmap_2d/costmap_2d.h>
+#include <costmap_2d/costmap_2d_ros.h>
+
 #include "simple_local_path_planner/simple_local_path_planner_config.h"
 
 using namespace std;
@@ -41,6 +45,12 @@ public:
      * \param plan Vector of waypoints for the robot to follow, in the same frame as the robot pose
      */
     void setPlan(const std::vector<geometry_msgs::PoseStamped>& plan);
+
+    /** \brief Set the costmap to be used by the planner for collision checking
+     * \param costmap Costmap
+     */
+    void setCostMap(costmap_2d::Costmap2D* costmap);
+
 
 
     // Pose getters
@@ -118,6 +128,11 @@ private:
         TRAVERSE
     };
 
+    /** \brief Checks if the costmap cost at the current robot pose exceeds the collision threshold. Does not currently consider whole robot footpring, only centre point.
+     * \return True if in collision.
+     */
+    bool robotInCollision() const;
+
     // Todo: General functions: consider moving these into some kind of utils namespace - would make it easier to do unit tests for these functions too.
         
     /** \brief Provide twist message with all zero velocities. 
@@ -171,6 +186,10 @@ private:
     Config m_config;
     MotionState m_motion_state;
 
+    // Costmap used to check collisions;
+    costmap_2d::Costmap2D* m_costmap;
+
+    // Friend class to allow testing of private functions
     friend class SimpleLocalPathPlannerTester;
 };
 };

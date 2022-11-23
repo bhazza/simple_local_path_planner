@@ -39,6 +39,11 @@ void SimpleLocalPathPlanner::setPlan(const std::vector<geometry_msgs::PoseStampe
     m_plan = plan;
 }
 
+void SimpleLocalPathPlanner::setCostMap(costmap_2d::Costmap2D* costmap)
+{
+    m_costmap = costmap;
+}
+
 const geometry_msgs::PoseStamped& SimpleLocalPathPlanner::getRobotPose() const
 {
     return m_robot_pose;
@@ -66,12 +71,18 @@ geometry_msgs::Twist SimpleLocalPathPlanner::getRotateToGoal()
     return getRotationalTwist(angular_delta);
 }
 
-// Todo: Consider splitting this function out
+// Todo: Consider splitting this function out. Also, consider returning bool instead, and returning false when object detected
 geometry_msgs::Twist SimpleLocalPathPlanner::getNextCmdVel()
 {
     // Todo: Check if these can change during execution, and if so should we take copies instead of reference?
     const geometry_msgs::PoseStamped& robot_pose = getRobotPose();
     const geometry_msgs::PoseStamped& target_pose = getTargetPose();
+
+    if (robotInCollision())
+    {
+        ROS_DEBUG("Robot is in collision with object. Stopping robot.");
+        return getStoppedCmdVel();
+    }
 
     // If we're not already at target pose, first check if we need to rotate in place towards target
     if (!robotIsAtPosition(target_pose))
@@ -175,6 +186,25 @@ bool SimpleLocalPathPlanner::robotIsAtOrientation(const geometry_msgs::PoseStamp
     const double abs_angular_delta = fabs(getAngularDelta(getRobotPose(), targetPose));
     const double angular_tolerance = toRadians(m_config.angular_tolerance_degrees);
     return abs_angular_delta < angular_tolerance;
+}
+
+bool SimpleLocalPathPlanner::robotInCollision() const
+{
+    // convert robot coordinates to cell coords (they're already in the same frame)
+    unsigned int cx, cy;
+    const geometry_msgs::PoseStamped robot_pose = getRobotPose();
+    m_costmap->worldToMap(robot_pose.pose.position.x, robot_pose.pose.position.y, cx, cy);
+
+    // Get cost at centre of robot - this is very crude, and we should really check the whole footprint of the robot
+    float cost = m_costmap->getCost(cx, cy);
+    ROS_DEBUG("Cost at robot position %f (threshold %f)", cost, m_config.collision_cost_threshold);
+
+    // Robot is considered to be in collision if cost is above config threshold.
+    if (cost > m_config.collision_cost_threshold)
+    {
+        return true;
+    }
+    return false;
 }
 
 geometry_msgs::Twist SimpleLocalPathPlanner::zeroTwist() const

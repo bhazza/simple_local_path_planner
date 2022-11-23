@@ -13,6 +13,7 @@ find_package(catkin REQUIRED COMPONENTS
   rospy
   std_msgs
   dynamic_reconfigure
+  costmap_2d
 )
 
 find_package(GTest REQUIRED)

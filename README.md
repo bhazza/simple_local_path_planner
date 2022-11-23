@@ -92,7 +92,7 @@ The following is a checklist of requirements specified by the coding exercise.
 
 Optional (choose at least one):
 - [X] Improve the computeVelocityCommands function to increase the accuracy and reliability of the path following algorithm. (***Velocities are proportional to distance/angle to target, parameters are configurable via dynamic reconfigure...***)
-- [ ] Use the available costmap to detect obstacles, and stop the robot before a collision occurs.
+- [X] Use the available costmap to detect obstacles, and stop the robot before a collision occurs. (***Basic implementation considering only the pose of the robot (and not full footprint). Robot stops when cost threshold is exceeded (threshold configurable in rqt_reconfigure***)
 - [ ] Implement a node that checks if the robot is following the calculated path and publishes a message on a ROS topic if the robot appears to be stuck and unable to follow the path.
 
 ### Non-Functional

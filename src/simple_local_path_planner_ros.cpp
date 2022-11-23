@@ -24,6 +24,12 @@ SimpleLocalPathPlannerROS::~SimpleLocalPathPlannerROS()
 {
     // Clean up allocated memory
     delete m_server;
+
+    if(m_costmap_ros != NULL)
+      delete m_costmap_ros;
+
+    if(m_tf != NULL)
+      delete m_tf;
 }
 
 // Take note that tf::TransformListener* has been changed to tf2_ros::Buffer* in ROS Noetic
@@ -35,6 +41,9 @@ void SimpleLocalPathPlannerROS::initialize(std::string name, tf2_ros::Buffer* tf
         m_tf = tf;
         m_costmap_ros = costmap_ros;
         m_initialised = true;
+
+        // Set the costmap to be used by the planner
+        m_slpp.setCostMap(costmap_ros->getCostmap());
 
         // Set up private node handle, dynamic reconfigure server and callback
         ros::NodeHandle private_nh("~/simple_local_path_planner");
@@ -125,6 +134,7 @@ void SimpleLocalPathPlannerROS::dynamicReconfigureConfig(simple_local_path_plann
     config.angular_tolerance_degrees = node_config.angular_tolerance_degrees;
     config.linear_tolerance = node_config.linear_tolerance;
     config.waypoint_step_size = node_config.waypoint_step_size;
+    config.collision_cost_threshold = node_config.collision_cost_threshold;
 
     m_slpp.setConfig(config);
 }
