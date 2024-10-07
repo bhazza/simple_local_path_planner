@@ -2,7 +2,7 @@
 ARG ROS_VERSION
 
 # For convenience, use ROS desktop full. Could optimise in future to use minimal ros:$ROS_VERSION install, or even start with Ubuntu 20.04 base image.
-FROM osrf/ros:$ROS_VERSION-desktop-full 
+FROM ros:$ROS_VERSION
 
 # (ARG reset due to "FROM" above)
 ARG ROS_VERSION 
@@ -16,7 +16,7 @@ RUN apt-get install -y \
   build-essential 
 # RUN ntpdate ntp.ubuntu.com
 
-RUN apt-get install -y \
+RUN DEBIAN_FRONTEND=noninteractive && apt-get install -y --no-install-recommends \
   ros-$ROS_VERSION-rqt-* \
   ros-$ROS_VERSION-gazebo-* \
   ros-$ROS_VERSION-gmapping \
